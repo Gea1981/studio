@@ -7,7 +7,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard/calendario');
+    router.replace('/dashboard/resumen');
   }, [router]);
 
   return null; // Or a loading indicator

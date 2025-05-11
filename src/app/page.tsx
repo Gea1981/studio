@@ -12,7 +12,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!isLoading) {
       if (user) {
-        router.replace('/dashboard/calendario');
+        router.replace('/dashboard/resumen');
       } else {
         router.replace('/login');
       }

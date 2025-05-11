@@ -13,9 +13,10 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { Atom, CalendarDays, UsersRound, ClipboardList, LogOut, Settings } from 'lucide-react';
+import { Atom, LayoutDashboard, CalendarDays, UsersRound, ClipboardList, LogOut } from 'lucide-react';
 
 const navItems = [
+  { href: '/dashboard/resumen', label: 'Resumen', icon: LayoutDashboard },
   { href: '/dashboard/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/dashboard/pacientes', label: 'Pacientes', icon: UsersRound },
   { href: '/dashboard/historiales', label: 'Historiales Médicos', icon: ClipboardList },
@@ -28,7 +29,7 @@ export default function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="p-4">
-        <Link href="/dashboard/calendario" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+        <Link href="/dashboard/resumen" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
           <Atom className="h-8 w-8 text-primary" />
           <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden">Agenda Médica</span>
         </Link>

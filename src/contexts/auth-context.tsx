@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(userData);
       localStorage.setItem('agendaMedicaUser', JSON.stringify(userData));
       setIsLoading(false);
-      router.push('/dashboard/calendario');
+      router.push('/dashboard/resumen'); // Updated redirect
       toast({ title: "Inicio de sesión exitoso", description: "Bienvenido, administrador." });
       return true;
     } else {

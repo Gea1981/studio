@@ -7,6 +7,7 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
 
 const getPageTitle = (pathname: string): string => {
+  if (pathname.startsWith('/dashboard/resumen')) return 'Resumen General';
   if (pathname.startsWith('/dashboard/calendario')) return 'Calendario de Citas';
   if (pathname.startsWith('/dashboard/pacientes')) return 'Gestión de Pacientes';
   if (pathname.startsWith('/dashboard/historiales')) return 'Historiales Médicos';
