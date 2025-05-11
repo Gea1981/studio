@@ -1,4 +1,4 @@
-import type { Patient, Appointment, MedicalEntry } from '@/types';
+import type { Patient, Appointment, MedicalEntry, BloodType } from '@/types';
 
 // Helper function to get data from localStorage
 const getFromLocalStorage = <T>(
@@ -56,9 +56,50 @@ const NEXT_APPOINTMENT_ID_KEY = 'agendaMedicaNextAppointmentId';
 
 // --- Patient Data ---
 const defaultPatients: Patient[] = [
-  { id: '1', firstName: 'Ana', lastName: 'Pérez', age: 34, gender: 'femenino', address: 'Calle Falsa 123', phone: '555-1234', email: 'ana.perez@example.com' },
-  { id: '2', firstName: 'Luis', lastName: 'García', age: 45, gender: 'masculino', address: 'Avenida Siempreviva 742', phone: '555-5678', email: 'luis.garcia@example.com' },
-  { id: '3', firstName: 'María', lastName: 'Rodriguez', age: 28, gender: 'femenino', address: 'Pasaje Seguro 45', phone: '555-8765', email: 'maria.rodriguez@example.com' },
+  { 
+    id: '1', 
+    firstName: 'Ana', 
+    lastName: 'Pérez', 
+    dni: '12345678',
+    age: 34, 
+    gender: 'femenino', 
+    address: 'Calle Falsa 123', 
+    phone: '555-1234', 
+    secondaryContact: '555-1111',
+    email: 'ana.perez@example.com',
+    socialWork: 'OSDE',
+    chronicDiseases: 'Migraña',
+    bloodType: 'A+'
+  },
+  { 
+    id: '2', 
+    firstName: 'Luis', 
+    lastName: 'García', 
+    dni: '87654321',
+    age: 45, 
+    gender: 'masculino', 
+    address: 'Avenida Siempreviva 742', 
+    phone: '555-5678', 
+    email: 'luis.garcia@example.com',
+    socialWork: 'Swiss Medical',
+    chronicDiseases: undefined,
+    bloodType: 'O-'
+  },
+  { 
+    id: '3', 
+    firstName: 'María', 
+    lastName: 'Rodriguez', 
+    dni: '11223344',
+    age: 28, 
+    gender: 'femenino', 
+    address: 'Pasaje Seguro 45', 
+    phone: '555-8765',
+    secondaryContact: '555-2222', 
+    email: 'maria.rodriguez@example.com',
+    bloodType: 'B+',
+    socialWork: 'Particular',
+    chronicDiseases: 'Asma',
+  },
 ];
 
 export const getStoredPatients = (): Patient[] => {

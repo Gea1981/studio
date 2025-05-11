@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, FilePenLine, Trash2, Eye } from 'lucide-react';
+import { MoreHorizontal, FilePenLine, Trash2, Eye, ShieldCheck, Droplets } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -61,8 +61,10 @@ export default function PatientList({ patients, onEdit, onDelete }: PatientListP
         <TableHeader>
           <TableRow>
             <TableHead className="w-[200px]">Nombre Completo</TableHead>
+            <TableHead className="w-[100px]">DNI</TableHead>
             <TableHead className="w-[80px]">Edad</TableHead>
             <TableHead className="w-[100px]">Sexo</TableHead>
+            <TableHead className="w-[100px]">Tipo Sangre</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Teléfono</TableHead>
             <TableHead className="text-right w-[80px]">Acciones</TableHead>
@@ -72,10 +74,16 @@ export default function PatientList({ patients, onEdit, onDelete }: PatientListP
           {patients.map((patient) => (
             <TableRow key={patient.id}>
               <TableCell className="font-medium">{`${patient.firstName} ${patient.lastName}`}</TableCell>
+              <TableCell>{patient.dni}</TableCell>
               <TableCell>{patient.age}</TableCell>
               <TableCell>
                 <Badge variant={patient.gender === 'femenino' ? 'secondary' : patient.gender === 'masculino' ? 'default' : 'outline'} className="capitalize">
                   {patient.gender}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="capitalize flex items-center gap-1">
+                  <Droplets size={12}/> {patient.bloodType}
                 </Badge>
               </TableCell>
               <TableCell>{patient.email}</TableCell>

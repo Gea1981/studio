@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Patient, MedicalEntry } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail } from 'lucide-react';
+import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
 import { getStoredPatients, getStoredMedicalHistory, saveStoredMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
@@ -101,14 +101,19 @@ function HistorialesContent() {
                 <UserCircle size={28} className="text-primary"/>
                 Historial de {selectedPatient.firstName} {selectedPatient.lastName}
               </CardTitle>
-              <div className="text-sm text-muted-foreground mt-2 space-x-4">
+              <div className="text-sm text-muted-foreground mt-2 space-x-4 flex flex-wrap gap-x-4 gap-y-1">
                 <span className="inline-flex items-center"><LucideCalendarIcon size={14} className="mr-1.5"/> Edad: {selectedPatient.age}</span>
                 <span className="inline-flex items-center"><UserCircle size={14} className="mr-1.5"/> Sexo: <Badge variant="outline" className="capitalize ml-1">{selectedPatient.gender}</Badge></span>
+                <span className="inline-flex items-center"><ShieldCheck size={14} className="mr-1.5"/> DNI: {selectedPatient.dni}</span>
+                <span className="inline-flex items-center"><Droplets size={14} className="mr-1.5"/> Sangre: <Badge variant="secondary" className="ml-1">{selectedPatient.bloodType}</Badge></span>
               </div>
-               <div className="text-sm text-muted-foreground mt-1 space-x-4">
+               <div className="text-sm text-muted-foreground mt-1 space-x-4 flex flex-wrap gap-x-4 gap-y-1">
                 <span className="inline-flex items-center"><Mail size={14} className="mr-1.5"/> {selectedPatient.email}</span>
                 <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.phone}</span>
+                 {selectedPatient.secondaryContact && <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.secondaryContact} (Sec)</span>}
               </div>
+              {selectedPatient.socialWork && <p className="text-xs text-muted-foreground mt-1">Obra Social: {selectedPatient.socialWork}</p>}
+              {selectedPatient.chronicDiseases && <p className="text-xs text-muted-foreground mt-1">Enf. Crónicas: {selectedPatient.chronicDiseases}</p>}
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button onClick={() => setIsModalOpen(true)} variant="outline" className="w-full sm:w-auto">
