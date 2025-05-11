@@ -9,11 +9,11 @@ export interface Patient {
   address: string;
   phone: string;
   email: string;
-  dni: string; // Nuevo campo DNI
-  socialWork?: string; // Nuevo campo Obra Social (opcional)
-  chronicDiseases?: string; // Nuevo campo Enfermedades Crónicas (opcional, texto libre)
-  bloodType: BloodType; // Nuevo campo Tipo de Sangre
-  secondaryContact?: string; // Nuevo campo Otro Contacto (opcional)
+  dni: string; 
+  socialWork?: string; 
+  chronicDiseases?: string; 
+  bloodType: BloodType; 
+  secondaryContact?: string; 
 }
 
 export interface MedicalEntry {
@@ -21,14 +21,20 @@ export interface MedicalEntry {
   patientId: string;
   date: string; // ISO date string e.g. "2024-07-15"
   notes: string;
-  // Future fields: diagnosis, treatment, attachments, etc.
 }
 
 export interface Appointment {
   id: string;
   patientId: string;
-  patientName?: string; // Denormalized for easier display
+  patientName?: string; 
   date: Date; // Full JS Date object
   reason: string;
   status: 'programada' | 'completada' | 'cancelada';
+}
+
+export interface UserCredentials {
+  id: string;
+  username: string;
+  password_plaintext: string; // Storing plaintext for mock purposes. In production, use a hash.
+  // role?: 'admin' | 'user'; // Optional role for future enhancements
 }

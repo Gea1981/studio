@@ -1,4 +1,4 @@
-import type { Patient, Appointment, MedicalEntry, BloodType } from '@/types';
+import type { Patient, Appointment, MedicalEntry, UserCredentials } from '@/types';
 
 // Helper function to get data from localStorage
 const getFromLocalStorage = <T>(
@@ -14,13 +14,10 @@ const getFromLocalStorage = <T>(
     if (item) {
       return JSON.parse(item, reviver);
     }
-    // If no item, save the default value for next time, applying reviver logic if any (though less common for default save)
-    // For dates, the default value is already a Date object, so stringify will handle it.
     window.localStorage.setItem(key, JSON.stringify(defaultValue));
     return defaultValue;
   } catch (error) {
     console.warn(`Error reading localStorage key "${key}":`, error);
-    // Fallback: save the default value if reading failed critically
     try {
       window.localStorage.setItem(key, JSON.stringify(defaultValue));
     } catch (saveError) {
@@ -50,9 +47,11 @@ const saveToLocalStorage = <T>(
 const PATIENTS_KEY = 'agendaMedicaPatients';
 const MEDICAL_HISTORY_KEY = 'agendaMedicaMedicalHistory';
 const APPOINTMENTS_KEY = 'agendaMedicaAppointments';
+const USERS_KEY = 'agendaMedicaUsers'; // New key for users
 const NEXT_PATIENT_ID_KEY = 'agendaMedicaNextPatientId';
 const NEXT_MEDICAL_ENTRY_ID_KEY = 'agendaMedicaNextMedicalEntryId';
 const NEXT_APPOINTMENT_ID_KEY = 'agendaMedicaNextAppointmentId';
+const NEXT_USER_ID_KEY = 'agendaMedicaNextUserId'; // New key for next user ID
 
 // --- Patient Data ---
 const defaultPatients: Patient[] = [
@@ -111,7 +110,6 @@ export const saveStoredPatients = (patients: Patient[]): void => {
 };
 
 export const getNextPatientId = (): string => {
-  // Initialize counter based on the length of default patients + 1 if not found
   let counter = getFromLocalStorage(NEXT_PATIENT_ID_KEY, defaultPatients.length + 1);
   const nextId = String(counter);
   saveToLocalStorage(NEXT_PATIENT_ID_KEY, counter + 1);
@@ -141,7 +139,6 @@ export const getNextMedicalEntryId = (): string => {
 };
 
 // --- Appointment Data ---
-// Ensure patient IDs in defaultAppointments match IDs in defaultPatients for consistency
 const defaultAppointments: Appointment[] = [
   { id: '1', patientId: '1', patientName: 'Ana Pérez', date: new Date(2024, 6, 18, 10, 0), reason: 'Consulta General', status: 'programada' },
   { id: '2', patientId: '2', patientName: 'Luis García', date: new Date(2024, 6, 18, 11, 30), reason: 'Revisión Dental', status: 'programada' },
@@ -149,11 +146,9 @@ const defaultAppointments: Appointment[] = [
   { id: '4', patientId: '1', patientName: 'Ana Pérez', date: new Date(2024, 6, 25, 14, 0), reason: 'Seguimiento', status: 'programada' },
 ];
 
-// Custom reviver for parsing dates from ISO strings
 const appointmentReviver = (key: string, value: any) => {
   if (key === 'date' && typeof value === 'string') {
     const d = new Date(value);
-    // Check if date is valid, otherwise return original string or null
     return isNaN(d.getTime()) ? value : d; 
   }
   return value;
@@ -171,5 +166,45 @@ export const getNextAppointmentId = (): string => {
   let counter = getFromLocalStorage(NEXT_APPOINTMENT_ID_KEY, defaultAppointments.length + 1);
   const nextId = String(counter);
   saveToLocalStorage(NEXT_APPOINTMENT_ID_KEY, counter + 1);
+  return nextId;
+};
+
+// --- User Data ---
+const defaultUsers: UserCredentials[] = [
+  { id: 'user-001', username: 'admin', password_plaintext: 'password' },
+  // Add more default users here if needed for testing
+  // { id: 'user-002', username: 'doctor', password_plaintext: 'doctorpass' },
+];
+
+export const getStoredUsers = (): UserCredentials[] => {
+  return getFromLocalStorage(USERS_KEY, defaultUsers);
+};
+
+export const saveStoredUsers = (users: UserCredentials[]): void => {
+  saveToLocalStorage(USERS_KEY, users);
+};
+
+export const getNextUserId = (): string => {
+  // Ensure IDs are unique, e.g., by finding the max numeric part of existing IDs or using a UUID approach
+  // For simplicity, we'll use a counter like other IDs, assuming 'user-XXX' format
+  const users = getStoredUsers();
+  let maxIdNum = 0;
+  users.forEach(user => {
+    if (user.id.startsWith('user-')) {
+      const numPart = parseInt(user.id.split('-')[1], 10);
+      if (!isNaN(numPart) && numPart > maxIdNum) {
+        maxIdNum = numPart;
+      }
+    }
+  });
+  
+  let counter = getFromLocalStorage(NEXT_USER_ID_KEY, Math.max(defaultUsers.length, maxIdNum) + 1);
+  // Ensure the counter is always at least one greater than the highest existing numeric ID part.
+  if (counter <= maxIdNum) {
+    counter = maxIdNum + 1;
+  }
+
+  const nextId = `user-${String(counter).padStart(3, '0')}`;
+  saveToLocalStorage(NEXT_USER_ID_KEY, counter + 1);
   return nextId;
 };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -13,13 +14,14 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/auth-context';
-import { Atom, LayoutDashboard, CalendarDays, UsersRound, ClipboardList, LogOut } from 'lucide-react';
+import { Atom, LayoutDashboard, CalendarDays, UsersRound, ClipboardList, LogOut, Settings } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard/resumen', label: 'Resumen', icon: LayoutDashboard },
   { href: '/dashboard/calendario', label: 'Calendario', icon: CalendarDays },
   { href: '/dashboard/pacientes', label: 'Pacientes', icon: UsersRound },
   { href: '/dashboard/historiales', label: 'Historiales Médicos', icon: ClipboardList },
+  { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
 ];
 
 export default function AppSidebar() {
@@ -58,7 +60,8 @@ export default function AppSidebar() {
          {user && (
             <div className="p-2 group-data-[collapsible=icon]:hidden text-sm">
                 <p className="font-semibold text-foreground">{user.username}</p>
-                <p className="text-xs text-muted-foreground">Administrador</p>
+                {/* Display role if available, e.g. user.username === 'admin' ? 'Administrador' : 'Usuario' */}
+                <p className="text-xs text-muted-foreground">{user.username === 'admin' ? 'Administrador' : 'Usuario'}</p>
             </div>
         )}
         <Button 

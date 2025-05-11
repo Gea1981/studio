@@ -1,3 +1,4 @@
+
 "use client";
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -11,6 +12,7 @@ const getPageTitle = (pathname: string): string => {
   if (pathname.startsWith('/dashboard/calendario')) return 'Calendario de Citas';
   if (pathname.startsWith('/dashboard/pacientes')) return 'Gestión de Pacientes';
   if (pathname.startsWith('/dashboard/historiales')) return 'Historiales Médicos';
+  if (pathname.startsWith('/dashboard/configuracion')) return 'Configuración';
   return 'Dashboard';
 };
 
