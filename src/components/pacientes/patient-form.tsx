@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from 'react';
@@ -20,7 +19,7 @@ const patientSchema = z.object({
   firstName: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
   lastName: z.string().min(2, { message: 'El apellido debe tener al menos 2 caracteres.' }),
   dni: z.string().regex(/^\d{7,8}$/, { message: 'El DNI debe tener entre 7 y 8 dígitos numéricos.' }),
-  age: z.coerce.number().int().positive({ message: 'La edad debe ser un número positivo.' }).min(0).max(120),
+  age: z.coerce.number().int().positive({ message: 'La edad debe ser un número positivo.' }).max(120),
   gender: z.enum(['masculino', 'femenino', 'otro'], { required_error: 'Por favor selecciona un género.' }),
   bloodType: z.enum(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Desconocido'], { required_error: 'Selecciona un tipo de sangre.' }),
   address: z.string().min(5, { message: 'La dirección debe tener al menos 5 caracteres.' }),
@@ -44,7 +43,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
     resolver: zodResolver(patientSchema),
     defaultValues: editingPatient ? {
       ...editingPatient,
-      age: editingPatient.age || undefined,
+      age: editingPatient.age, // Directly use number, handles 0 correctly
       socialWork: editingPatient.socialWork || '',
       chronicDiseases: editingPatient.chronicDiseases || '',
       secondaryContact: editingPatient.secondaryContact || '',
@@ -52,8 +51,8 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
       firstName: '',
       lastName: '',
       dni: '',
-      age: undefined, 
-      gender: undefined,
+      age: '' as any, // Initialize as empty string for new patient to ensure controlled input
+      gender: undefined, // Select handles undefined as placeholder
       bloodType: 'Desconocido',
       address: '',
       phone: '',
@@ -68,7 +67,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
     if (editingPatient) {
       form.reset({
         ...editingPatient,
-        age: editingPatient.age || undefined,
+        age: editingPatient.age, // Directly use number
         socialWork: editingPatient.socialWork || '',
         chronicDiseases: editingPatient.chronicDiseases || '',
         secondaryContact: editingPatient.secondaryContact || '',
@@ -78,7 +77,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
         firstName: '',
         lastName: '',
         dni: '',
-        age: undefined,
+        age: '' as any, // Initialize as empty string for new patient
         gender: undefined,
         bloodType: 'Desconocido',
         address: '',
@@ -94,7 +93,8 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
   const handleSubmit = (data: PatientFormValues) => {
     const patientData = {
         ...data,
-        socialWork: data.socialWork || undefined, // Ensure empty strings are stored as undefined
+        age: Number(data.age), // Ensure age is number before submitting
+        socialWork: data.socialWork || undefined, 
         chronicDiseases: data.chronicDiseases || undefined,
         secondaryContact: data.secondaryContact || undefined,
     };
@@ -107,7 +107,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
       toast({ title: "Paciente Registrado", description: `${data.firstName} ${data.lastName} ha sido registrado exitosamente.` });
     }
     if (!editingPatient) { 
-        form.reset();
+        form.reset(); // Reset to new patient defaults
     }
   };
 
@@ -164,7 +164,9 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
               <FormItem>
                 <FormLabel>Edad</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} />
+                  {/* Pass field.value directly. RHF handles number/string conversion.
+                      onChange converts to number for RHF state. Zod coerces. */}
+                  <Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
