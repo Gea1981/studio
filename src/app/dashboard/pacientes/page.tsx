@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -7,22 +8,16 @@ import type { Patient } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserPlus, ListChecks } from 'lucide-react';
+import { initialPatients as mockInitialPatients, getNextPatientId } from '@/lib/mock-data';
 
-// Mock patient data store
-let nextId = 4;
-const initialPatients: Patient[] = [
-  { id: '1', firstName: 'Ana', lastName: 'Pérez', age: 34, gender: 'femenino', address: 'Calle Falsa 123', phone: '555-1234', email: 'ana.perez@example.com' },
-  { id: '2', firstName: 'Luis', lastName: 'García', age: 45, gender: 'masculino', address: 'Avenida Siempreviva 742', phone: '555-5678', email: 'luis.garcia@example.com' },
-  { id: '3', firstName: 'María', lastName: 'Rodriguez', age: 28, gender: 'femenino', address: 'Pasaje Seguro 45', phone: '555-8765', email: 'maria.rodriguez@example.com' },
-];
 
 export default function PacientesPage() {
-  const [patients, setPatients] = useState<Patient[]>(initialPatients);
+  const [patients, setPatients] = useState<Patient[]>(mockInitialPatients);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState("list");
 
   const handleAddPatient = (patient: Omit<Patient, 'id'>) => {
-    const newPatient = { ...patient, id: String(nextId++) };
+    const newPatient = { ...patient, id: getNextPatientId() };
     setPatients(prev => [newPatient, ...prev]);
     setActiveTab("list"); // Switch to list after adding
   };

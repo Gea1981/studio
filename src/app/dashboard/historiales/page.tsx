@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -10,34 +11,20 @@ import { Badge } from '@/components/ui/badge';
 import type { Patient, MedicalEntry } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PlusCircle, FileText, UserCircle, CalendarIcon, Phone, Mail } from 'lucide-react';
+import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
-
-// Mock data - In a real app, this would come from a database/API
-const mockPatients: Patient[] = [
-  { id: '1', firstName: 'Ana', lastName: 'Pérez', age: 34, gender: 'femenino', address: 'Calle Falsa 123', phone: '555-1234', email: 'ana.perez@example.com' },
-  { id: '2', firstName: 'Luis', lastName: 'García', age: 45, gender: 'masculino', address: 'Avenida Siempreviva 742', phone: '555-5678', email: 'luis.garcia@example.com' },
-  { id: '3', firstName: 'María', lastName: 'Rodriguez', age: 28, gender: 'femenino', address: 'Pasaje Seguro 45', phone: '555-8765', email: 'maria.rodriguez@example.com' },
-];
-
-let nextMedicalEntryId = 4;
-const mockMedicalHistory: MedicalEntry[] = [
-  { id: '1', patientId: '1', date: '2023-01-15', notes: 'Consulta general. Paciente refiere dolor de cabeza ocasional. Se recomienda descanso y hidratación.' },
-  { id: '2', patientId: '1', date: '2023-06-20', notes: 'Chequeo anual. Todo en orden. Próxima revisión en un año.' },
-  { id: '3', patientId: '2', date: '2023-03-10', notes: 'Revisión dental. Limpieza realizada. Se detecta caries leve en molar superior derecho.' },
-];
+import { initialPatients, initialMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
 
 function HistorialesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(searchParams.get('patientId') || undefined);
-  const [patients, setPatients] = useState<Patient[]>(mockPatients); // In real app, fetch this
-  const [medicalHistory, setMedicalHistory] = useState<MedicalEntry[]>(mockMedicalHistory); // In real app, fetch this
+  const [patients, setPatients] = useState<Patient[]>(initialPatients);
+  const [medicalHistory, setMedicalHistory] = useState<MedicalEntry[]>(initialMedicalHistory);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Sync selectedPatientId with URL search param
     const patientIdFromUrl = searchParams.get('patientId');
     if (patientIdFromUrl && patientIdFromUrl !== selectedPatientId) {
       setSelectedPatientId(patientIdFromUrl);
@@ -58,10 +45,16 @@ function HistorialesContent() {
     if (!selectedPatientId) return;
     const newEntry: MedicalEntry = {
       ...entryData,
-      id: String(nextMedicalEntryId++),
+      id: getNextMedicalEntryId(),
       patientId: selectedPatientId,
     };
     setMedicalHistory(prev => [newEntry, ...prev]);
+  };
+
+  const handleRegisterNewAppointment = () => {
+    if (!selectedPatient) return;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    router.push(`/dashboard/calendario?newAppointmentForPatientId=${selectedPatient.id}&newAppointmentDate=${today}`);
   };
 
   return (
@@ -89,14 +82,14 @@ function HistorialesContent() {
 
       {selectedPatient ? (
         <Card className="shadow-lg rounded-xl">
-          <CardHeader className="flex flex-row justify-between items-start">
+          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <UserCircle size={28} className="text-primary"/>
                 Historial de {selectedPatient.firstName} {selectedPatient.lastName}
               </CardTitle>
               <div className="text-sm text-muted-foreground mt-2 space-x-4">
-                <span className="inline-flex items-center"><CalendarIcon size={14} className="mr-1.5"/> Edad: {selectedPatient.age}</span>
+                <span className="inline-flex items-center"><LucideCalendarIcon size={14} className="mr-1.5"/> Edad: {selectedPatient.age}</span>
                 <span className="inline-flex items-center"><UserCircle size={14} className="mr-1.5"/> Sexo: <Badge variant="outline" className="capitalize ml-1">{selectedPatient.gender}</Badge></span>
               </div>
                <div className="text-sm text-muted-foreground mt-1 space-x-4">
@@ -104,9 +97,14 @@ function HistorialesContent() {
                 <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.phone}</span>
               </div>
             </div>
-            <Button onClick={() => setIsModalOpen(true)}>
-              <PlusCircle size={18} className="mr-2" /> Nueva Entrada
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button onClick={() => setIsModalOpen(true)} variant="outline" className="w-full sm:w-auto">
+                    <PlusCircle size={18} className="mr-2" /> Nueva Entrada Médica
+                </Button>
+                <Button onClick={handleRegisterNewAppointment} className="w-full sm:w-auto">
+                    <PlusCircle size={18} className="mr-2" /> Registrar Nueva Cita
+                </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {patientMedicalEntries.length > 0 ? (
@@ -118,7 +116,6 @@ function HistorialesContent() {
                         <h4 className="font-semibold text-primary">
                           {format(parseISO(entry.date), "PPP", { locale: es })}
                         </h4>
-                        {/* Add edit/delete for entries in future */}
                       </div>
                       <p className="text-sm text-foreground whitespace-pre-wrap">{entry.notes}</p>
                     </div>
@@ -129,7 +126,7 @@ function HistorialesContent() {
               <div className="text-center py-10 text-muted-foreground">
                 <FileText size={48} className="mx-auto mb-2" />
                 <p>No hay entradas en el historial médico para este paciente.</p>
-                <p className="text-xs mt-1">Puedes añadir una nueva entrada usando el botón de arriba.</p>
+                <p className="text-xs mt-1">Puedes añadir una nueva entrada o cita usando los botones de arriba.</p>
               </div>
             )}
           </CardContent>
@@ -166,7 +163,6 @@ function HistorialesContent() {
 }
 
 export default function HistorialesPage() {
-  // Suspense boundary for useSearchParams
   return (
     <Suspense fallback={
         <div className="flex flex-col items-center justify-center h-64">
