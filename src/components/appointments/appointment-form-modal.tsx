@@ -23,8 +23,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import type { Appointment, Patient } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { Save, X, CalendarIcon as LucideCalendarIcon, Clock } from 'lucide-react'; // Renamed CalendarIcon to avoid conflict
-import { format, parse, setHours, setMinutes } from 'date-fns';
+import { Save, X, CalendarIcon as LucideCalendarIcon, Clock } from 'lucide-react';
+import { format, setHours, setMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -36,15 +36,16 @@ const appointmentSchema = z.object({
   status: z.enum(['programada', 'completada', 'cancelada'], { required_error: 'El estado es requerido.' }),
 });
 
-type AppointmentFormValues = z.infer<typeof appointmentSchema>;
+export type AppointmentFormValues = z.infer<typeof appointmentSchema>;
 
 interface AppointmentFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<Appointment, 'id' | 'patientName'>) => void;
+  onSubmit: (data: AppointmentFormValues, editingId?: string) => void;
   patients: Patient[];
   initialPatientId?: string;
   initialDate?: Date;
+  editingAppointment?: Appointment | null;
 }
 
 export default function AppointmentFormModal({
@@ -54,43 +55,42 @@ export default function AppointmentFormModal({
   patients,
   initialPatientId,
   initialDate,
+  editingAppointment,
 }: AppointmentFormModalProps) {
   const form = useForm<AppointmentFormValues>({
     resolver: zodResolver(appointmentSchema),
-    defaultValues: {
-      patientId: initialPatientId || undefined,
-      date: initialDate || new Date(),
-      time: initialDate ? format(initialDate, "HH:mm") : format(new Date(), "HH:mm"),
-      reason: '',
-      status: 'programada',
-    },
+    // Default values will be set by useEffect
   });
 
   useEffect(() => {
-    form.reset({
-      patientId: initialPatientId || undefined,
-      date: initialDate || new Date(),
-      time: initialDate ? format(initialDate, "HH:mm") : format(new Date(), "HH:mm"),
-      reason: '',
-      status: 'programada',
-    });
-  }, [isOpen, initialPatientId, initialDate, form]);
+    if (isOpen) {
+      if (editingAppointment) {
+        form.reset({
+          patientId: editingAppointment.patientId,
+          date: editingAppointment.date, // This is a Date object
+          time: format(editingAppointment.date, "HH:mm"), // Extract time
+          reason: editingAppointment.reason,
+          status: editingAppointment.status,
+        });
+      } else {
+        form.reset({
+          patientId: initialPatientId || undefined,
+          date: initialDate || new Date(),
+          time: initialDate ? format(initialDate, "HH:mm") : format(new Date(), "HH:mm"),
+          reason: '',
+          status: 'programada',
+        });
+      }
+    }
+  }, [isOpen, editingAppointment, initialPatientId, initialDate, form]);
 
   const handleSubmit = (data: AppointmentFormValues) => {
-    const [hours, minutes] = data.time.split(':').map(Number);
-    let combinedDate = setHours(data.date, hours);
-    combinedDate = setMinutes(combinedDate, minutes);
-
-    const patientName = patients.find(p => p.id === data.patientId)?.firstName + ' ' + patients.find(p => p.id === data.patientId)?.lastName;
-
-    onSubmit({
-      patientId: data.patientId,
-      date: combinedDate,
-      reason: data.reason,
-      status: data.status,
+    onSubmit(data, editingAppointment?.id);
+    toast({
+      title: editingAppointment ? "Cita Actualizada" : "Cita Guardada",
+      description: `La cita para ${patients.find(p => p.id === data.patientId)?.firstName || 'el paciente'} ha sido ${editingAppointment ? 'actualizada' : 'registrada'}.`
     });
-    toast({ title: "Cita Guardada", description: `Nueva cita registrada para ${patientName || 'el paciente seleccionado'}.` });
-    onClose(); // form.reset is handled by useEffect on isOpen change
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -99,9 +99,9 @@ export default function AppointmentFormModal({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Registrar Nueva Cita</DialogTitle>
+          <DialogTitle>{editingAppointment ? 'Editar Cita' : 'Registrar Nueva Cita'}</DialogTitle>
           <DialogDescription>
-            Completa los detalles de la nueva cita.
+            {editingAppointment ? 'Modifica los detalles de la cita.' : 'Completa los detalles de la nueva cita.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -112,7 +112,7 @@ export default function AppointmentFormModal({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Paciente</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!editingAppointment}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona un paciente..." />
@@ -233,7 +233,8 @@ export default function AppointmentFormModal({
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                <Save size={18} className="mr-2"/> Guardar Cita
+                <Save size={18} className="mr-2"/> 
+                {editingAppointment ? 'Guardar Cambios' : 'Guardar Cita'}
               </Button>
             </DialogFooter>
           </form>
