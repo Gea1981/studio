@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -14,7 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PlusCircle, Users } from 'lucide-react';
 import AppointmentFormModal from '@/components/appointments/appointment-form-modal';
-import { initialAppointments, initialPatients, getNextAppointmentId } from '@/lib/mock-data';
+import { getStoredAppointments, saveStoredAppointments, getStoredPatients, getNextAppointmentId } from '@/lib/mock-data';
 import Spinner from '@/components/ui/spinner';
 
 function CalendarioPageContent() {
@@ -22,12 +21,17 @@ function CalendarioPageContent() {
   const searchParams = useSearchParams();
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
-  const [patients, setPatients] = useState<Patient[]>(initialPatients); // Use patients from mock-data
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [targetPatientIdForModal, setTargetPatientIdForModal] = useState<string | undefined>(undefined);
   const [targetDateForModal, setTargetDateForModal] = useState<Date | undefined>(new Date());
+
+  useEffect(() => {
+    setAppointments(getStoredAppointments());
+    setPatients(getStoredPatients());
+  }, []);
 
   useEffect(() => {
     const newAppPatientId = searchParams.get('newAppointmentForPatientId');
@@ -61,7 +65,11 @@ function CalendarioPageContent() {
       id: getNextAppointmentId(),
       patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Desconocido',
     };
-    setAppointments(prev => [...prev, newAppointment].sort((a,b) => a.date.getTime() - b.date.getTime()));
+    setAppointments(prev => {
+      const updatedAppointments = [...prev, newAppointment].sort((a,b) => a.date.getTime() - b.date.getTime());
+      saveStoredAppointments(updatedAppointments);
+      return updatedAppointments;
+    });
   };
 
   return (
@@ -96,14 +104,14 @@ function CalendarioPageContent() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={() => {
-                setTargetPatientIdForModal(undefined);
+                setTargetPatientIdForModal(undefined); // No specific patient, could be new or general
                 setTargetDateForModal(selectedDate || new Date());
                 setIsAppointmentModalOpen(true);
               }}
               className="cursor-pointer"
             >
               <Users className="mr-2 h-4 w-4" />
-              Cita General
+              Cita General / Nuevo Paciente
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -14,15 +13,25 @@ import { es } from 'date-fns/locale';
 import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
-import { initialPatients, initialMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
+import { getStoredPatients, getStoredMedicalHistory, saveStoredMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
 
 function HistorialesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(searchParams.get('patientId') || undefined);
-  const [patients, setPatients] = useState<Patient[]>(initialPatients);
-  const [medicalHistory, setMedicalHistory] = useState<MedicalEntry[]>(initialMedicalHistory);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [medicalHistory, setMedicalHistory] = useState<MedicalEntry[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setPatients(getStoredPatients());
+    setMedicalHistory(getStoredMedicalHistory());
+
+    const patientIdFromUrl = searchParams.get('patientId');
+    if (patientIdFromUrl && !selectedPatientId) {
+      setSelectedPatientId(patientIdFromUrl);
+    }
+  }, []); // Load once on mount
 
   useEffect(() => {
     const patientIdFromUrl = searchParams.get('patientId');
@@ -48,7 +57,11 @@ function HistorialesContent() {
       id: getNextMedicalEntryId(),
       patientId: selectedPatientId,
     };
-    setMedicalHistory(prev => [newEntry, ...prev]);
+    setMedicalHistory(prev => {
+      const updatedHistory = [newEntry, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+      saveStoredMedicalHistory(updatedHistory);
+      return updatedHistory;
+    });
   };
 
   const handleRegisterNewAppointment = () => {
@@ -132,12 +145,12 @@ function HistorialesContent() {
           </CardContent>
         </Card>
       ) : (
-         selectedPatientId && !selectedPatient ? (
+         selectedPatientId && !selectedPatient && patients.length > 0 ? ( // Only show "not found" if patients are loaded
             <Card className="shadow-lg rounded-xl">
                  <CardContent className="py-10 text-center text-muted-foreground">
                     <UserCircle size={48} className="mx-auto mb-2 text-destructive" />
                     <p>Paciente no encontrado.</p>
-                    <p className="text-xs mt-1">El ID del paciente en la URL no es válido.</p>
+                    <p className="text-xs mt-1">El ID del paciente en la URL no es válido o el paciente no existe.</p>
                 </CardContent>
             </Card>
          ) : (

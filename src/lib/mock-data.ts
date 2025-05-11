@@ -1,30 +1,134 @@
-
 import type { Patient, Appointment, MedicalEntry } from '@/types';
 
-// Patients
-let nextPatientIdCounter = 4;
-export const initialPatients: Patient[] = [
+// Helper function to get data from localStorage
+const getFromLocalStorage = <T>(
+  key: string,
+  defaultValue: T,
+  reviver?: (key: string, value: any) => any
+): T => {
+  if (typeof window === 'undefined') {
+    return defaultValue;
+  }
+  try {
+    const item = window.localStorage.getItem(key);
+    if (item) {
+      return JSON.parse(item, reviver);
+    }
+    // If no item, save the default value for next time, applying reviver logic if any (though less common for default save)
+    // For dates, the default value is already a Date object, so stringify will handle it.
+    window.localStorage.setItem(key, JSON.stringify(defaultValue));
+    return defaultValue;
+  } catch (error) {
+    console.warn(`Error reading localStorage key "${key}":`, error);
+    // Fallback: save the default value if reading failed critically
+    try {
+      window.localStorage.setItem(key, JSON.stringify(defaultValue));
+    } catch (saveError) {
+      console.warn(`Error saving default to localStorage key "${key}" after read failure:`, saveError);
+    }
+    return defaultValue;
+  }
+};
+
+// Helper function to save data to localStorage
+const saveToLocalStorage = <T>(
+  key: string,
+  value: T,
+  replacer?: (key: string, value: any) => any
+): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value, replacer));
+  } catch (error) {
+    console.warn(`Error writing localStorage key "${key}":`, error);
+  }
+};
+
+// Keys for localStorage
+const PATIENTS_KEY = 'agendaMedicaPatients';
+const MEDICAL_HISTORY_KEY = 'agendaMedicaMedicalHistory';
+const APPOINTMENTS_KEY = 'agendaMedicaAppointments';
+const NEXT_PATIENT_ID_KEY = 'agendaMedicaNextPatientId';
+const NEXT_MEDICAL_ENTRY_ID_KEY = 'agendaMedicaNextMedicalEntryId';
+const NEXT_APPOINTMENT_ID_KEY = 'agendaMedicaNextAppointmentId';
+
+// --- Patient Data ---
+const defaultPatients: Patient[] = [
   { id: '1', firstName: 'Ana', lastName: 'Pérez', age: 34, gender: 'femenino', address: 'Calle Falsa 123', phone: '555-1234', email: 'ana.perez@example.com' },
   { id: '2', firstName: 'Luis', lastName: 'García', age: 45, gender: 'masculino', address: 'Avenida Siempreviva 742', phone: '555-5678', email: 'luis.garcia@example.com' },
   { id: '3', firstName: 'María', lastName: 'Rodriguez', age: 28, gender: 'femenino', address: 'Pasaje Seguro 45', phone: '555-8765', email: 'maria.rodriguez@example.com' },
 ];
-export const getNextPatientId = () => String(nextPatientIdCounter++);
 
-// Medical Entries
-let nextMedicalEntryIdCounter = 4;
-export const initialMedicalHistory: MedicalEntry[] = [
+export const getStoredPatients = (): Patient[] => {
+  return getFromLocalStorage(PATIENTS_KEY, defaultPatients);
+};
+
+export const saveStoredPatients = (patients: Patient[]): void => {
+  saveToLocalStorage(PATIENTS_KEY, patients);
+};
+
+export const getNextPatientId = (): string => {
+  // Initialize counter based on the length of default patients + 1 if not found
+  let counter = getFromLocalStorage(NEXT_PATIENT_ID_KEY, defaultPatients.length + 1);
+  const nextId = String(counter);
+  saveToLocalStorage(NEXT_PATIENT_ID_KEY, counter + 1);
+  return nextId;
+};
+
+// --- Medical Entry Data ---
+const defaultMedicalHistory: MedicalEntry[] = [
   { id: '1', patientId: '1', date: '2023-01-15', notes: 'Consulta general. Paciente refiere dolor de cabeza ocasional. Se recomienda descanso y hidratación.' },
   { id: '2', patientId: '1', date: '2023-06-20', notes: 'Chequeo anual. Todo en orden. Próxima revisión en un año.' },
   { id: '3', patientId: '2', date: '2023-03-10', notes: 'Revisión dental. Limpieza realizada. Se detecta caries leve en molar superior derecho.' },
 ];
-export const getNextMedicalEntryId = () => String(nextMedicalEntryIdCounter++);
 
-// Appointments
-let nextAppointmentIdCounter = 5; // Start after existing mock data
-export const initialAppointments: Appointment[] = [
-  { id: '1', patientId: 'p1', patientName: 'Ana Pérez', date: new Date(2024, 6, 18, 10, 0), reason: 'Consulta General', status: 'programada' },
-  { id: '2', patientId: 'p2', patientName: 'Luis García', date: new Date(2024, 6, 18, 11, 30), reason: 'Revisión Dental', status: 'programada' },
-  { id: '3', patientId: 'p3', patientName: 'María Rodriguez', date: new Date(2024, 6, 20, 9, 0), reason: 'Vacunación', status: 'completada' },
-  { id: '4', patientId: 'p1', patientName: 'Ana Pérez', date: new Date(2024, 6, 25, 14, 0), reason: 'Seguimiento', status: 'programada' },
+export const getStoredMedicalHistory = (): MedicalEntry[] => {
+  return getFromLocalStorage(MEDICAL_HISTORY_KEY, defaultMedicalHistory);
+};
+
+export const saveStoredMedicalHistory = (medicalEntries: MedicalEntry[]): void => {
+  saveToLocalStorage(MEDICAL_HISTORY_KEY, medicalEntries);
+};
+
+export const getNextMedicalEntryId = (): string => {
+  let counter = getFromLocalStorage(NEXT_MEDICAL_ENTRY_ID_KEY, defaultMedicalHistory.length + 1);
+  const nextId = String(counter);
+  saveToLocalStorage(NEXT_MEDICAL_ENTRY_ID_KEY, counter + 1);
+  return nextId;
+};
+
+// --- Appointment Data ---
+// Ensure patient IDs in defaultAppointments match IDs in defaultPatients for consistency
+const defaultAppointments: Appointment[] = [
+  { id: '1', patientId: '1', patientName: 'Ana Pérez', date: new Date(2024, 6, 18, 10, 0), reason: 'Consulta General', status: 'programada' },
+  { id: '2', patientId: '2', patientName: 'Luis García', date: new Date(2024, 6, 18, 11, 30), reason: 'Revisión Dental', status: 'programada' },
+  { id: '3', patientId: '3', patientName: 'María Rodriguez', date: new Date(2024, 6, 20, 9, 0), reason: 'Vacunación', status: 'completada' },
+  { id: '4', patientId: '1', patientName: 'Ana Pérez', date: new Date(2024, 6, 25, 14, 0), reason: 'Seguimiento', status: 'programada' },
 ];
-export const getNextAppointmentId = () => String(nextAppointmentIdCounter++);
+
+// Custom reviver for parsing dates from ISO strings
+const appointmentReviver = (key: string, value: any) => {
+  if (key === 'date' && typeof value === 'string') {
+    const d = new Date(value);
+    // Check if date is valid, otherwise return original string or null
+    return isNaN(d.getTime()) ? value : d; 
+  }
+  return value;
+};
+
+export const getStoredAppointments = (): Appointment[] => {
+  return getFromLocalStorage(APPOINTMENTS_KEY, defaultAppointments, appointmentReviver);
+};
+
+export const saveStoredAppointments = (appointments: Appointment[]): void => {
+  saveToLocalStorage(APPOINTMENTS_KEY, appointments);
+};
+
+export const getNextAppointmentId = (): string => {
+  let counter = getFromLocalStorage(NEXT_APPOINTMENT_ID_KEY, defaultAppointments.length + 1);
+  const nextId = String(counter);
+  saveToLocalStorage(NEXT_APPOINTMENT_ID_KEY, counter + 1);
+  return nextId;
+};

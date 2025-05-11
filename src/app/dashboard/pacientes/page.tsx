@@ -1,35 +1,50 @@
-
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PatientForm from '@/components/pacientes/patient-form';
 import PatientList from '@/components/pacientes/patient-list';
 import type { Patient } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { UserPlus, ListChecks } from 'lucide-react';
-import { initialPatients as mockInitialPatients, getNextPatientId } from '@/lib/mock-data';
+import { getStoredPatients, saveStoredPatients, getNextPatientId } from '@/lib/mock-data';
 
 
 export default function PacientesPage() {
-  const [patients, setPatients] = useState<Patient[]>(mockInitialPatients);
+  const [patients, setPatients] = useState<Patient[]>([]);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [activeTab, setActiveTab] = useState("list");
 
+  useEffect(() => {
+    setPatients(getStoredPatients());
+  }, []);
+
   const handleAddPatient = (patient: Omit<Patient, 'id'>) => {
     const newPatient = { ...patient, id: getNextPatientId() };
-    setPatients(prev => [newPatient, ...prev]);
+    setPatients(prev => {
+      const updatedPatients = [newPatient, ...prev];
+      saveStoredPatients(updatedPatients);
+      return updatedPatients;
+    });
     setActiveTab("list"); // Switch to list after adding
   };
 
   const handleUpdatePatient = (updatedPatient: Patient) => {
-    setPatients(prev => prev.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+    setPatients(prev => {
+      const updatedPatients = prev.map(p => p.id === updatedPatient.id ? updatedPatient : p);
+      saveStoredPatients(updatedPatients);
+      return updatedPatients;
+    });
     setEditingPatient(null);
     setActiveTab("list"); // Switch to list after editing
   };
 
   const handleDeletePatient = (patientId: string) => {
-    setPatients(prev => prev.filter(p => p.id !== patientId));
+    setPatients(prev => {
+      const updatedPatients = prev.filter(p => p.id !== patientId);
+      saveStoredPatients(updatedPatients);
+      return updatedPatients;
+    });
   };
 
   const handleEditPatient = (patient: Patient) => {
