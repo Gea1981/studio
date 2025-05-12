@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
@@ -13,7 +14,8 @@ import { es } from 'date-fns/locale';
 import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets, Printer, AlertTriangle } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
-import { getAllPatientsFromFirestore, getAllMedicalEntriesFromFirestore, addMedicalEntryToFirestore } from '@/lib/firebase-services';
+import { getAllPatientsFromFirestore } from '@/lib/firebase-services';
+import { getStoredMedicalHistory, saveStoredMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -26,21 +28,22 @@ function HistorialesContent() {
   const [medicalHistory, setMedicalHistory] = useState<MedicalEntry[]>([]);
   
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true); // Keep for consistency, though localStorage is fast
+  const [errorPatients, setErrorPatients] = useState<string | null>(null);
+  // errorHistory can be minimal as localStorage errors are rare or handled differently
   
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchPatients = useCallback(async () => {
     setIsLoadingPatients(true);
-    setError(null);
+    setErrorPatients(null);
     try {
       const fetchedPatients = await getAllPatientsFromFirestore();
       setPatients(fetchedPatients);
     } catch (e: any) {
       console.error("Failed to fetch patients:", e.message);
       const errorMessage = e.message || "No se pudieron cargar los pacientes. Intente más tarde.";
-      setError(errorMessage);
+      setErrorPatients(errorMessage);
       toast({ title: "Error al Cargar Pacientes", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoadingPatients(false);
@@ -49,15 +52,15 @@ function HistorialesContent() {
 
   const fetchMedicalHistory = useCallback(async () => {
     setIsLoadingHistory(true);
-    setError(null);
+    // Simulate async for consistency with patients, though localStorage is sync
+    await Promise.resolve(); 
     try {
-      const fetchedHistory = await getAllMedicalEntriesFromFirestore();
+      const fetchedHistory = getStoredMedicalHistory();
       setMedicalHistory(fetchedHistory.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
     } catch (e: any) {
-      console.error("Failed to fetch medical history:", e.message);
-      const errorMessage = e.message || "No se pudo cargar el historial médico. Intente más tarde.";
-      setError(errorMessage);
-      toast({ title: "Error al Cargar Historial Médico", description: errorMessage, variant: "destructive" });
+      // This catch block is less likely to be hit with localStorage unless JSON.parse fails badly
+      console.error("Failed to fetch medical history from localStorage:", e.message);
+      toast({ title: "Error al Cargar Historial Médico Local", description: "No se pudo cargar el historial médico local.", variant: "destructive" });
     } finally {
       setIsLoadingHistory(false);
     }
@@ -83,23 +86,25 @@ function HistorialesContent() {
   const selectedPatient = patients.find(p => p.id === selectedPatientId);
   const patientMedicalEntries = medicalHistory
     .filter(entry => entry.patientId === selectedPatientId);
-    // Already sorted when fetched
+    // Already sorted when fetched/updated
 
   const handleAddMedicalEntry = async (entryData: Omit<MedicalEntry, 'id' | 'patientId'>) => {
     if (!selectedPatientId) return;
-    setError(null);
-    try {
-      const newEntryData = { ...entryData, patientId: selectedPatientId };
-      const addedEntry = await addMedicalEntryToFirestore(newEntryData);
-      // The date from Firestore might need re-conversion if it comes back as Timestamp, but our service should handle it.
-      // The `addMedicalEntryToFirestore` returns the entry with string date.
-      setMedicalHistory(prev => [addedEntry, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
-       toast({ title: "Entrada Médica Guardada", description: `Nueva entrada registrada para ${selectedPatient?.firstName} ${selectedPatient?.lastName}.` });
-    } catch (e: any) {
-      console.error("Failed to add medical entry:", e.message);
-      const errorMessage = e.message || "No se pudo agregar la entrada médica.";
-      toast({ title: "Error al Agregar Entrada Médica", description: errorMessage, variant: "destructive" });
-    }
+    
+    const newEntry: MedicalEntry = {
+      ...entryData,
+      id: getNextMedicalEntryId(), // Get ID from mock-data helper
+      patientId: selectedPatientId,
+      // date is already string "YYYY-MM-DD" from form
+    };
+
+    setMedicalHistory(prev => {
+      const updatedHistory = [newEntry, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime());
+      saveStoredMedicalHistory(updatedHistory); // Save to localStorage
+      return updatedHistory;
+    });
+    
+    toast({ title: "Entrada Médica Guardada", description: `Nueva entrada registrada para ${selectedPatient?.firstName} ${selectedPatient?.lastName}.` });
   };
 
   const handleRegisterNewAppointment = () => {
@@ -121,18 +126,18 @@ function HistorialesContent() {
     );
   }
 
-  if (error) {
+  if (errorPatients) { // Primarily show error for patient fetching
     return (
       <Card className="shadow-lg rounded-xl print-hide-content">
         <CardHeader>
           <CardTitle className="text-destructive flex items-center gap-2">
-            <AlertTriangle size={24} /> Error al Cargar Datos
+            <AlertTriangle size={24} /> Error al Cargar Datos de Pacientes
           </CardTitle>
         </CardHeader>
         <CardContent className="py-10 text-center text-destructive-foreground bg-destructive/10 rounded-b-xl">
-          <p className="whitespace-pre-wrap">{error}</p>
+          <p className="whitespace-pre-wrap">{errorPatients}</p>
           <Button onClick={() => { fetchPatients(); fetchMedicalHistory(); }} variant="outline" className="mt-4 border-destructive text-destructive hover:bg-destructive/20">
-            Reintentar
+            Reintentar Carga
           </Button>
         </CardContent>
       </Card>
@@ -221,7 +226,7 @@ function HistorialesContent() {
           </CardContent>
         </Card>
       ) : (
-         selectedPatientId && !selectedPatient && patients.length > 0 ? ( 
+         selectedPatientId && !selectedPatient && patients.length > 0 && !isLoadingPatients ? ( 
             <Card className="shadow-lg rounded-xl print-hide-content">
                  <CardContent className="py-10 text-center text-muted-foreground">
                     <UserCircle size={48} className="mx-auto mb-2 text-destructive" />
