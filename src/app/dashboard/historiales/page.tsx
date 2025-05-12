@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, Suspense } from 'react';
@@ -10,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import type { Patient, MedicalEntry } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets } from 'lucide-react';
+import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets, Printer } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
 import { getStoredPatients, getStoredMedicalHistory, saveStoredMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
+import { cn } from '@/lib/utils';
 
 function HistorialesContent() {
   const searchParams = useSearchParams();
@@ -70,9 +72,13 @@ function HistorialesContent() {
     router.push(`/dashboard/calendario?newAppointmentForPatientId=${selectedPatient.id}&newAppointmentDate=${today}`);
   };
 
+  const handlePrintHistory = () => {
+    window.print();
+  };
+
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg rounded-xl">
+      <Card className="shadow-lg rounded-xl print-hide-content">
         <CardHeader>
           <CardTitle>Seleccionar Paciente</CardTitle>
           <CardDescription>Elige un paciente para ver su historial médico.</CardDescription>
@@ -94,33 +100,34 @@ function HistorialesContent() {
       </Card>
 
       {selectedPatient ? (
-        <Card className="shadow-lg rounded-xl">
+        <Card className={cn("shadow-lg rounded-xl", selectedPatient ? "historiales-print-area" : "print-hide-content")}>
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <UserCircle size={28} className="text-primary"/>
+                <UserCircle size={28} className="text-primary" />
                 Historial de {selectedPatient.firstName} {selectedPatient.lastName}
               </CardTitle>
-              <div className="text-sm text-muted-foreground mt-2 space-x-4 flex flex-wrap gap-x-4 gap-y-1">
+              <div className="patient-details-print mt-2 space-y-1">
                 <span className="inline-flex items-center"><LucideCalendarIcon size={14} className="mr-1.5"/> Edad: {selectedPatient.age}</span>
                 <span className="inline-flex items-center"><UserCircle size={14} className="mr-1.5"/> Sexo: <Badge variant="outline" className="capitalize ml-1">{selectedPatient.gender}</Badge></span>
                 <span className="inline-flex items-center"><ShieldCheck size={14} className="mr-1.5"/> DNI: {selectedPatient.dni}</span>
                 <span className="inline-flex items-center"><Droplets size={14} className="mr-1.5"/> Sangre: <Badge variant="secondary" className="ml-1">{selectedPatient.bloodType}</Badge></span>
-              </div>
-               <div className="text-sm text-muted-foreground mt-1 space-x-4 flex flex-wrap gap-x-4 gap-y-1">
                 <span className="inline-flex items-center"><Mail size={14} className="mr-1.5"/> {selectedPatient.email}</span>
                 <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.phone}</span>
-                 {selectedPatient.secondaryContact && <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.secondaryContact} (Sec)</span>}
+                {selectedPatient.secondaryContact && <span className="inline-flex items-center"><Phone size={14} className="mr-1.5"/> {selectedPatient.secondaryContact} (Sec)</span>}
+                {selectedPatient.socialWork && <p className="text-xs text-muted-foreground">Obra Social: {selectedPatient.socialWork}</p>}
+                {selectedPatient.chronicDiseases && <p className="text-xs text-muted-foreground">Enf. Crónicas: {selectedPatient.chronicDiseases}</p>}
               </div>
-              {selectedPatient.socialWork && <p className="text-xs text-muted-foreground mt-1">Obra Social: {selectedPatient.socialWork}</p>}
-              {selectedPatient.chronicDiseases && <p className="text-xs text-muted-foreground mt-1">Enf. Crónicas: {selectedPatient.chronicDiseases}</p>}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto print-hide-content">
                 <Button onClick={() => setIsModalOpen(true)} variant="outline" className="w-full sm:w-auto">
                     <PlusCircle size={18} className="mr-2" /> Nueva Entrada Médica
                 </Button>
                 <Button onClick={handleRegisterNewAppointment} className="w-full sm:w-auto">
                     <PlusCircle size={18} className="mr-2" /> Registrar Nueva Cita
+                </Button>
+                <Button onClick={handlePrintHistory} variant="outline" className="w-full sm:w-auto">
+                    <Printer size={18} className="mr-2" /> Imprimir Historial
                 </Button>
             </div>
           </CardHeader>
@@ -129,7 +136,7 @@ function HistorialesContent() {
               <ScrollArea className="h-[400px] pr-3">
                 <div className="space-y-4">
                   {patientMedicalEntries.map(entry => (
-                    <div key={entry.id} className="p-4 rounded-md border bg-card hover:shadow-md transition-shadow">
+                    <div key={entry.id} className="p-4 rounded-md border bg-card hover:shadow-md transition-shadow medical-entry">
                       <div className="flex justify-between items-center mb-1">
                         <h4 className="font-semibold text-primary">
                           {format(parseISO(entry.date), "PPP", { locale: es })}
@@ -141,17 +148,17 @@ function HistorialesContent() {
                 </div>
               </ScrollArea>
             ) : (
-              <div className="text-center py-10 text-muted-foreground">
+              <div className="text-center py-10 text-muted-foreground no-entries-message">
                 <FileText size={48} className="mx-auto mb-2" />
                 <p>No hay entradas en el historial médico para este paciente.</p>
-                <p className="text-xs mt-1">Puedes añadir una nueva entrada o cita usando los botones de arriba.</p>
+                <p className="text-xs mt-1 print-hide-content">Puedes añadir una nueva entrada o cita usando los botones de arriba.</p>
               </div>
             )}
           </CardContent>
         </Card>
       ) : (
-         selectedPatientId && !selectedPatient && patients.length > 0 ? ( // Only show "not found" if patients are loaded
-            <Card className="shadow-lg rounded-xl">
+         selectedPatientId && !selectedPatient && patients.length > 0 ? ( 
+            <Card className="shadow-lg rounded-xl print-hide-content">
                  <CardContent className="py-10 text-center text-muted-foreground">
                     <UserCircle size={48} className="mx-auto mb-2 text-destructive" />
                     <p>Paciente no encontrado.</p>
@@ -159,7 +166,7 @@ function HistorialesContent() {
                 </CardContent>
             </Card>
          ) : (
-            <Card className="shadow-lg rounded-xl">
+            <Card className="shadow-lg rounded-xl print-hide-content">
                  <CardContent className="py-10 text-center text-muted-foreground">
                     <UserCircle size={48} className="mx-auto mb-2" />
                     <p>Selecciona un paciente para ver su historial.</p>
@@ -183,7 +190,7 @@ function HistorialesContent() {
 export default function HistorialesPage() {
   return (
     <Suspense fallback={
-        <div className="flex flex-col items-center justify-center h-64">
+        <div className="flex flex-col items-center justify-center h-64 print-hide-content">
             <Spinner size="lg"/>
             <p className="mt-2 text-muted-foreground">Cargando historiales...</p>
         </div>
@@ -192,3 +199,4 @@ export default function HistorialesPage() {
     </Suspense>
   );
 }
+

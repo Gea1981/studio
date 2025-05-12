@@ -113,3 +113,144 @@ body {
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+@media print {
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Make the specific print area and its children visible */
+  .historiales-print-area, .historiales-print-area * {
+    visibility: visible !important;
+  }
+
+  /* Position the print area to take up the whole page */
+  .historiales-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20mm !important; /* Standard A4 print margin */
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    font-size: 10pt !important; 
+    color: black !important;
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure all text and backgrounds within print area are suitable for printing */
+  .historiales-print-area *,
+  .historiales-print-area *:before,
+  .historiales-print-area *:after {
+    color: black !important; 
+    background-color: transparent !important; 
+    box-shadow: none !important;
+    border-color: #ccc !important; /* Lighten borders if any */
+  }
+  
+  /* Hide specific elements within the print area that are for screen only */
+  .historiales-print-area .print-hide-content {
+    display: none !important;
+  }
+
+  .historiales-print-area .card-header,
+  .historiales-print-area .card-content {
+    padding: 0 !important; 
+  }
+  
+  .historiales-print-area .card-title {
+    font-size: 16pt !important; 
+    margin-bottom: 15px !important;
+    font-weight: bold !important;
+  }
+  .historiales-print-area .card-title svg { 
+    display: none !important;
+  }
+
+  /* Patient details styling */
+  .historiales-print-area .patient-details-print {
+    font-size: 10pt !important;
+    margin-bottom: 20px !important;
+    line-height: 1.5 !important;
+  }
+  .historiales-print-area .patient-details-print > span,
+  .historiales-print-area .patient-details-print > p {
+     display: block !important; 
+     margin-bottom: 4px !important;
+  }
+  .historiales-print-area .patient-details-print .badge {
+    font-size: 9pt !important;
+    border: 1px solid #ddd !important;
+    padding: 2px 5px !important;
+    margin-left: 5px !important;
+    display: inline-block !important;
+    background-color: #f9f9f9 !important;
+    color: black !important;
+    border-radius: 4px !important;
+  }
+  .historiales-print-area .patient-details-print svg { 
+     display: none !important;
+  }
+
+  /* Medical entries list */
+  .historiales-print-area .scroll-area { 
+    height: auto !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+  .historiales-print-area .medical-entry { 
+    border: 1px solid #eee !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+    page-break-inside: avoid !important;
+    background-color: #fff !important;
+    border-radius: 4px !important;
+  }
+   .historiales-print-area .medical-entry h4 { 
+    font-size: 11pt !important;
+    font-weight: bold !important; 
+    color: #000 !important; 
+    margin-bottom: 6px !important;
+  }
+  .historiales-print-area .medical-entry p.text-sm { 
+    font-size: 10pt !important;
+    white-space: pre-wrap !important; 
+    color: #000 !important;
+    line-height: 1.5 !important;
+  }
+  
+  /* Placeholder for no entries */
+  .historiales-print-area .no-entries-message {
+     font-style: italic !important;
+     text-align: center !important;
+     padding: 20px !important;
+     border: 1px dashed #ccc !important;
+     margin-top: 20px !important;
+  }
+  .historiales-print-area .no-entries-message svg {
+    display: block !important; 
+    margin: 0 auto 10px auto !important;
+    width: 30pt !important;
+    height: 30pt !important;
+    opacity: 0.5 !important;
+  }
+
+  /* General page setup for printing */
+  @page {
+    size: A4; 
+    margin: 20mm; 
+  }
+
+  a { text-decoration: none !important; color: inherit !important; }
+}
