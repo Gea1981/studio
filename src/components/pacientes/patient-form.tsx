@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -320,7 +321,8 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
             <FormItem>
               <FormLabel>Enfermedades Crónicas (Opcional)</FormLabel>
               <FormControl>
-                 <>
+                 {/* Wrap content in a div to receive the 'id' prop */}
+                 <div>
                    <Input
                     placeholder="Escribe una enfermedad y presiona Enter..."
                     value={currentDiseaseInput}
@@ -342,7 +344,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
                        </Badge>
                      ))}
                    </div>
-                 </>
+                 </div>
               </FormControl>
               <FormDescription>
                 Añade enfermedades separadas por Enter o coma.
@@ -368,3 +370,4 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
     </Form>
   );
 }
+
