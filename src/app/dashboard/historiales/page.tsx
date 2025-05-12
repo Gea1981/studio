@@ -37,10 +37,11 @@ function HistorialesContent() {
     try {
       const fetchedPatients = await getAllPatientsFromFirestore();
       setPatients(fetchedPatients);
-    } catch (e) {
-      console.error("Failed to fetch patients:", e);
-      setError("No se pudieron cargar los pacientes. Intente más tarde.");
-      toast({ title: "Error", description: "No se pudieron cargar los pacientes.", variant: "destructive" });
+    } catch (e: any) {
+      console.error("Failed to fetch patients:", e.message);
+      const errorMessage = e.message || "No se pudieron cargar los pacientes. Intente más tarde.";
+      setError(errorMessage);
+      toast({ title: "Error al Cargar Pacientes", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoadingPatients(false);
     }
@@ -52,10 +53,11 @@ function HistorialesContent() {
     try {
       const fetchedHistory = await getAllMedicalEntriesFromFirestore();
       setMedicalHistory(fetchedHistory.sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
-    } catch (e) {
-      console.error("Failed to fetch medical history:", e);
-      setError("No se pudo cargar el historial médico. Intente más tarde.");
-      toast({ title: "Error", description: "No se pudo cargar el historial médico.", variant: "destructive" });
+    } catch (e: any) {
+      console.error("Failed to fetch medical history:", e.message);
+      const errorMessage = e.message || "No se pudo cargar el historial médico. Intente más tarde.";
+      setError(errorMessage);
+      toast({ title: "Error al Cargar Historial Médico", description: errorMessage, variant: "destructive" });
     } finally {
       setIsLoadingHistory(false);
     }
@@ -92,9 +94,11 @@ function HistorialesContent() {
       // The date from Firestore might need re-conversion if it comes back as Timestamp, but our service should handle it.
       // The `addMedicalEntryToFirestore` returns the entry with string date.
       setMedicalHistory(prev => [addedEntry, ...prev].sort((a, b) => parseISO(b.date).getTime() - parseISO(a.date).getTime()));
-    } catch (e) {
-      console.error("Failed to add medical entry:", e);
-      toast({ title: "Error", description: "No se pudo agregar la entrada médica.", variant: "destructive" });
+       toast({ title: "Entrada Médica Guardada", description: `Nueva entrada registrada para ${selectedPatient?.firstName} ${selectedPatient?.lastName}.` });
+    } catch (e: any) {
+      console.error("Failed to add medical entry:", e.message);
+      const errorMessage = e.message || "No se pudo agregar la entrada médica.";
+      toast({ title: "Error al Agregar Entrada Médica", description: errorMessage, variant: "destructive" });
     }
   };
 
@@ -126,7 +130,7 @@ function HistorialesContent() {
           </CardTitle>
         </CardHeader>
         <CardContent className="py-10 text-center text-destructive-foreground bg-destructive/10 rounded-b-xl">
-          <p>{error}</p>
+          <p className="whitespace-pre-wrap">{error}</p>
           <Button onClick={() => { fetchPatients(); fetchMedicalHistory(); }} variant="outline" className="mt-4 border-destructive text-destructive hover:bg-destructive/20">
             Reintentar
           </Button>
@@ -261,3 +265,4 @@ export default function HistorialesPage() {
     </Suspense>
   );
 }
+
