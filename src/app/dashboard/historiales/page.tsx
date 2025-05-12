@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Patient, MedicalEntry } from '@/types';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets, Printer, AlertTriangle } from 'lucide-react';
+import { PlusCircle, FileText, UserCircle, CalendarIcon as LucideCalendarIcon, Phone, Mail, ShieldCheck, Droplets, Printer, AlertTriangle, HeartPulse } from 'lucide-react';
 import MedicalEntryFormModal from '@/components/historiales/medical-entry-form-modal';
 import Spinner from '@/components/ui/spinner';
 import { getStoredPatients, getStoredMedicalHistory, saveStoredMedicalHistory, getNextMedicalEntryId } from '@/lib/mock-data';
@@ -164,16 +164,26 @@ function HistorialesContent() {
                 Historial de {selectedPatient.firstName} {selectedPatient.lastName}
               </CardTitle>
               <div className="patient-details-print mt-2 space-y-1 text-sm text-muted-foreground">
-                <span className="inline-flex items-center mr-4"><LucideCalendarIcon size={14} className="mr-1.5 text-primary"/> Edad: {selectedPatient.age}</span>
-                <span className="inline-flex items-center mr-4"><UserCircle size={14} className="mr-1.5 text-primary"/> Sexo: <Badge variant="outline" className="capitalize ml-1">{selectedPatient.gender}</Badge></span>
-                <span className="inline-flex items-center mr-4"><ShieldCheck size={14} className="mr-1.5 text-primary"/> DNI: {selectedPatient.dni}</span>
-                <span className="inline-flex items-center mr-4"><Droplets size={14} className="mr-1.5 text-primary"/> Sangre: <Badge variant="secondary" className="ml-1">{selectedPatient.bloodType}</Badge></span>
-                <br className="sm:hidden"/>
-                <span className="inline-flex items-center mr-4"><Mail size={14} className="mr-1.5 text-primary"/> {selectedPatient.email}</span>
-                <span className="inline-flex items-center"><Phone size={14} className="mr-1.5 text-primary"/> {selectedPatient.phone}</span>
-                {selectedPatient.secondaryContact && <span className="inline-flex items-center ml-4"><Phone size={14} className="mr-1.5 text-primary"/> {selectedPatient.secondaryContact} (Sec)</span>}
-                {selectedPatient.socialWork && <p className="text-xs text-muted-foreground mt-1">Obra Social: {selectedPatient.socialWork}</p>}
-                {selectedPatient.chronicDiseases && <p className="text-xs text-muted-foreground">Enf. Crónicas: {selectedPatient.chronicDiseases}</p>}
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1'>
+                    <span className="inline-flex items-center"><LucideCalendarIcon size={14} className="mr-1.5 text-primary"/> Edad: {selectedPatient.age}</span>
+                    <span className="inline-flex items-center"><UserCircle size={14} className="mr-1.5 text-primary"/> Sexo: <Badge variant="outline" className="capitalize ml-1">{selectedPatient.gender}</Badge></span>
+                    <span className="inline-flex items-center"><ShieldCheck size={14} className="mr-1.5 text-primary"/> DNI: {selectedPatient.dni}</span>
+                    <span className="inline-flex items-center"><Droplets size={14} className="mr-1.5 text-primary"/> Sangre: <Badge variant="secondary" className="ml-1">{selectedPatient.bloodType}</Badge></span>
+                    <span className="inline-flex items-center"><Mail size={14} className="mr-1.5 text-primary"/> {selectedPatient.email}</span>
+                    <span className="inline-flex items-center"><Phone size={14} className="mr-1.5 text-primary"/> {selectedPatient.phone}</span>
+                    {selectedPatient.secondaryContact && <span className="inline-flex items-center"><Phone size={14} className="mr-1.5 text-primary"/> {selectedPatient.secondaryContact} (Sec)</span>}
+                    {selectedPatient.socialWork && <span className="inline-flex items-center text-xs"><ShieldCheck size={12} className="mr-1 text-primary"/> OS: {selectedPatient.socialWork}</span>}
+                </div>
+                 {selectedPatient.chronicDiseases && selectedPatient.chronicDiseases.length > 0 && (
+                    <div className="mt-2">
+                        <span className="inline-flex items-center font-medium"><HeartPulse size={14} className="mr-1.5 text-primary"/> Enf. Crónicas:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            {selectedPatient.chronicDiseases.map((disease, index) => (
+                                <Badge key={index} variant="outline">{disease}</Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto print-hide-content">

@@ -11,7 +11,7 @@ export interface Patient {
   email: string;
   dni: string; 
   socialWork?: string; 
-  chronicDiseases?: string; 
+  chronicDiseases?: string[]; // Changed from string to string[]
   bloodType: BloodType; 
   secondaryContact?: string; 
 }
@@ -32,9 +32,11 @@ export interface Appointment {
   status: 'programada' | 'completada' | 'cancelada';
 }
 
+// Using password_plaintext for mock/local storage only. 
+// In a real app, use a secure hash (e.g., bcrypt) and never store plaintext.
 export interface UserCredentials {
   id: string;
   username: string;
-  password_plaintext: string; // Storing plaintext for mock purposes. In production, use a hash.
+  password_plaintext: string; 
   // role?: 'admin' | 'user'; // Optional role for future enhancements
 }

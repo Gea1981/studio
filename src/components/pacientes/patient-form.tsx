@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Badge } from '@/components/ui/badge';
 import type { Patient, BloodType } from '@/types';
 import { toast } from '@/hooks/use-toast';
-import { UserPlus, Save, XCircle } from 'lucide-react';
+import { UserPlus, Save, XCircle, X as CloseIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const bloodTypes: BloodType[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Desconocido'];
 
@@ -27,7 +29,7 @@ const patientSchema = z.object({
   secondaryContact: z.string().regex(/^\+?[0-9\s-()]{7,20}$/, { message: 'Número de contacto secundario inválido.' }).optional().or(z.literal('')),
   email: z.string().email({ message: 'Email inválido.' }),
   socialWork: z.string().optional(),
-  chronicDiseases: z.string().optional(),
+  chronicDiseases: z.array(z.string()).optional(), // Updated to array of strings
 });
 
 type PatientFormValues = z.infer<typeof patientSchema>;
@@ -39,82 +41,102 @@ interface PatientFormProps {
 }
 
 export default function PatientForm({ onSubmitPatient, editingPatient, onCancelEdit }: PatientFormProps) {
+  
+  const defaultFormValues = useCallback(() => ({
+    firstName: '',
+    lastName: '',
+    dni: '',
+    age: '' as any,
+    gender: undefined,
+    bloodType: 'Desconocido' as BloodType,
+    address: '',
+    phone: '',
+    secondaryContact: '',
+    email: '',
+    socialWork: '',
+    chronicDiseases: [] as string[], // Initialize as empty array
+  }), []);
+
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: editingPatient ? {
       ...editingPatient,
-      age: editingPatient.age, // Directly use number, handles 0 correctly
+      age: editingPatient.age, 
       socialWork: editingPatient.socialWork || '',
-      chronicDiseases: editingPatient.chronicDiseases || '',
+      chronicDiseases: editingPatient.chronicDiseases || [], // Ensure it's an array
       secondaryContact: editingPatient.secondaryContact || '',
-    } : {
-      firstName: '',
-      lastName: '',
-      dni: '',
-      age: '' as any, // Initialize as empty string for new patient to ensure controlled input
-      gender: undefined, // Select handles undefined as placeholder
-      bloodType: 'Desconocido',
-      address: '',
-      phone: '',
-      secondaryContact: '',
-      email: '',
-      socialWork: '',
-      chronicDiseases: '',
-    },
+    } : defaultFormValues(),
   });
+
+  const [currentDiseaseInput, setCurrentDiseaseInput] = useState('');
 
   useEffect(() => {
     if (editingPatient) {
       form.reset({
         ...editingPatient,
-        age: editingPatient.age, // Directly use number
+        age: editingPatient.age, 
         socialWork: editingPatient.socialWork || '',
-        chronicDiseases: editingPatient.chronicDiseases || '',
+        chronicDiseases: editingPatient.chronicDiseases || [], // Ensure array
         secondaryContact: editingPatient.secondaryContact || '',
       });
     } else {
-      form.reset({
-        firstName: '',
-        lastName: '',
-        dni: '',
-        age: '' as any, // Initialize as empty string for new patient
-        gender: undefined,
-        bloodType: 'Desconocido',
-        address: '',
-        phone: '',
-        secondaryContact: '',
-        email: '',
-        socialWork: '',
-        chronicDiseases: '',
-      });
+      form.reset(defaultFormValues());
     }
-  }, [editingPatient, form]);
+  }, [editingPatient, form, defaultFormValues]);
+
+  const handleAddDisease = (disease: string) => {
+    if (disease && !form.getValues('chronicDiseases')?.includes(disease)) {
+      const currentDiseases = form.getValues('chronicDiseases') || [];
+      form.setValue('chronicDiseases', [...currentDiseases, disease], { shouldValidate: true });
+    }
+  };
+
+  const handleRemoveDisease = (diseaseToRemove: string) => {
+    const currentDiseases = form.getValues('chronicDiseases') || [];
+    form.setValue('chronicDiseases', currentDiseases.filter(d => d !== diseaseToRemove), { shouldValidate: true });
+  };
+
+  const handleDiseaseInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     setCurrentDiseaseInput(e.target.value);
+  };
+
+  const handleDiseaseInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const newDisease = currentDiseaseInput.trim();
+      if (newDisease) {
+        handleAddDisease(newDisease);
+        setCurrentDiseaseInput(''); // Clear input after adding
+      }
+    }
+  };
 
   const handleSubmit = (data: PatientFormValues) => {
+    // Ensure final data structure is correct
     const patientData = {
-        ...data,
-        age: Number(data.age), // Ensure age is number before submitting
-        socialWork: data.socialWork || undefined, 
-        chronicDiseases: data.chronicDiseases || undefined,
-        secondaryContact: data.secondaryContact || undefined,
+      ...data,
+      age: Number(data.age), 
+      socialWork: data.socialWork?.trim() || undefined, 
+      chronicDiseases: data.chronicDiseases && data.chronicDiseases.length > 0 ? data.chronicDiseases : undefined, // Store as array or undefined
+      secondaryContact: data.secondaryContact?.trim() || undefined,
     };
-
+  
     if (editingPatient) {
       onSubmitPatient({ ...editingPatient, ...patientData });
       toast({ title: "Paciente Actualizado", description: `${data.firstName} ${data.lastName} ha sido actualizado.` });
     } else {
-      onSubmitPatient(patientData);
+      onSubmitPatient(patientData); // Pass Omit<Patient, 'id'>
       toast({ title: "Paciente Registrado", description: `${data.firstName} ${data.lastName} ha sido registrado exitosamente.` });
+      form.reset(defaultFormValues()); // Reset to new patient defaults only when adding
     }
-    if (!editingPatient) { 
-        form.reset(); // Reset to new patient defaults
-    }
+     setCurrentDiseaseInput(''); // Clear temporary input on submit
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* ... other fields (firstName, lastName, dni, age, gender, bloodType, address, phone, email) ... */}
+         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormField
             control={form.control}
             name="firstName"
@@ -164,8 +186,6 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
               <FormItem>
                 <FormLabel>Edad</FormLabel>
                 <FormControl>
-                  {/* Pass field.value directly. RHF handles number/string conversion.
-                      onChange converts to number for RHF state. Zod coerces. */}
                   <Input type="number" placeholder="Ej: 30" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)} />
                 </FormControl>
                 <FormMessage />
@@ -228,7 +248,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
             <FormItem>
               <FormLabel>Dirección</FormLabel>
               <FormControl>
-                <Textarea placeholder="Ej: Calle Falsa 123, Ciudad" {...field} />
+                <Textarea placeholder="Ej: Calle Falsa 123, Ciudad" className="min-h-[60px]" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -278,8 +298,7 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
             )}
           />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-           <FormField
+        <FormField
             control={form.control}
             name="socialWork"
             render={({ field }) => (
@@ -292,20 +311,46 @@ export default function PatientForm({ onSubmitPatient, editingPatient, onCancelE
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="chronicDiseases"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Enfermedades Crónicas (Opcional)</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Ej: Hipertensión, Diabetes tipo 2" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+
+        {/* Chronic Diseases Input */}
+        <FormField
+          control={form.control}
+          name="chronicDiseases"
+          render={({ field }) => ( // field contains { value: string[], onChange: (value: string[]) => void, ... }
+            <FormItem>
+              <FormLabel>Enfermedades Crónicas (Opcional)</FormLabel>
+              <FormControl>
+                 <>
+                   <Input
+                    placeholder="Escribe una enfermedad y presiona Enter..."
+                    value={currentDiseaseInput}
+                    onChange={handleDiseaseInputChange}
+                    onKeyDown={handleDiseaseInputKeyDown}
+                   />
+                   <div className="mt-2 flex flex-wrap gap-2">
+                     {field.value?.map((disease) => (
+                       <Badge key={disease} variant="secondary" className="flex items-center gap-1 pr-1">
+                         {disease}
+                         <button
+                           type="button"
+                           onClick={() => handleRemoveDisease(disease)}
+                           className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
+                           aria-label={`Eliminar ${disease}`}
+                         >
+                           <CloseIcon size={14} />
+                         </button>
+                       </Badge>
+                     ))}
+                   </div>
+                 </>
+              </FormControl>
+              <FormDescription>
+                Añade enfermedades separadas por Enter o coma.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <div className="flex justify-end space-x-3 pt-4">
           {editingPatient && onCancelEdit && (
