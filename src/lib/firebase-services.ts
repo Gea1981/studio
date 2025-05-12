@@ -1,7 +1,7 @@
 
 'use server';
 
-import { db, auth as firebaseAuthInstance } from '@/lib/firebase'; // Corrected import path
+import { db, auth as firebaseAuthInstance } from './firebase'; // Corrected import path to relative
 import {
   collection,
   getDocs,
@@ -442,4 +442,24 @@ export const deleteAppointmentFromFirestore = async (appointmentId: string): Pro
     console.error("Error deleting appointment from Firestore:", error);
     throw error;
   }
+};
+
+// --- Helper for ID generation - Kept for potential future use if moving away from Firestore generated IDs for some collections ---
+// This function is not used by the app that uses Firestore, but it's kept for compatibility with mock-data structure
+// It's related to local storage ID generation.
+// Ensure server actions are async
+export async function getNextIdFor(key: string, initialMax: number): Promise<string> {
+  // This function as-is is not suitable for server actions because it uses localStorage.
+  // For server-side ID generation, a database sequence or UUIDs would be used.
+  // Since this project now uses Firestore, Firestore auto-generates IDs for new documents.
+  // If custom IDs are needed with Firestore and must be sequential, it requires a more complex setup (e.g., a counter document).
+  // For now, this function will return a timestamp-based pseudo-ID if called on server.
+  // It's highly recommended to rely on Firestore's auto-ID generation.
+  
+  // This function will likely not be called from server components/actions in the current setup
+  // because ID generation for new entities is handled by Firestore `addDoc`.
+  // If it were to be called, it would need a server-side compatible implementation.
+  
+  // console.warn(`getNextIdFor was called for key ${key}. This function is intended for client-side localStorage and may not behave as expected on the server.`);
+  return String(Date.now() + Math.random()); // Placeholder for server environment
 };
