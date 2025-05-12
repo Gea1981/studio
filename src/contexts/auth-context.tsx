@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
 import type { UserCredentials } from '@/types';
-import { getStoredUsers, saveStoredUsers } from '@/lib/mock-data'; // Assuming saveStoredUsers might be needed if users could register themselves.
+import { getStoredUsers, saveStoredUsers } from '@/lib/mock-data';
 
 interface AuthContextType {
   user: UserCredentials | null;
@@ -25,12 +25,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Initialize users if not already present (e.g., first run)
-    const users = getStoredUsers();
-    if (users.length === 0) { // This ensures default users are set up if localStorage is empty
-        // This will save the defaultUsers array (containing admin) to localStorage
-        // The getStoredUsers already handles setting default if key not found.
-        // No explicit save is needed here unless we want to force overwrite, which is not the goal.
-    }
+    // getStoredUsers from mock-data.ts already handles setting default users if localStorage is empty
+    getStoredUsers(); 
 
     try {
       const storedUser = localStorage.getItem('agendaMedicaUser');
@@ -39,23 +35,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error("Error reading user from localStorage", error);
-      localStorage.removeItem('agendaMedicaUser');
+      localStorage.removeItem('agendaMedicaUser'); // Clear corrupted data
     }
     setIsLoading(false);
   }, []);
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate short delay
 
     const users = getStoredUsers();
-    const foundUser = users.find(u => u.username === username);
+    const foundUser = users.find(u => u.username === username && u.password_plaintext === password);
 
-    if (foundUser && foundUser.password_plaintext === password) {
+    if (foundUser) {
+      // Ensure the user object stored contains all necessary fields, especially 'id' and 'password_plaintext' for consistency
       const userData: UserCredentials = { 
         id: foundUser.id, 
         username: foundUser.username,
-        password_plaintext: foundUser.password_plaintext // Store for mock purposes, IRL don't store plaintext
+        password_plaintext: foundUser.password_plaintext // Storing plaintext for mock/localStorage
       };
       setUser(userData);
       localStorage.setItem('agendaMedicaUser', JSON.stringify(userData));
@@ -80,8 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateCurrentUser = useCallback((updatedUser: UserCredentials) => {
     setUser(updatedUser);
     localStorage.setItem('agendaMedicaUser', JSON.stringify(updatedUser));
-    // Potentially update the list of all users in localStorage if password changed here
-    // For this app structure, it's better to handle updating the full user list in the configuracion page
+    
+    // Also update the user in the main list of users stored in localStorage
+    const allUsers = getStoredUsers();
+    const userIndex = allUsers.findIndex(u => u.id === updatedUser.id);
+    if (userIndex !== -1) {
+      allUsers[userIndex] = updatedUser;
+      saveStoredUsers(allUsers);
+    }
   }, []);
 
 

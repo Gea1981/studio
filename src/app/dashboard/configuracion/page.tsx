@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import Spinner from '@/components/ui/spinner';
 import { getStoredUsers, saveStoredUsers, getNextUserId } from '@/lib/mock-data';
 import { PlusCircle, Users } from 'lucide-react';
-import { useAuth } from '@/contexts/auth-context'; // To get current user
+import { useAuth } from '@/contexts/auth-context'; 
 
 function ConfiguracionPageContent() {
   const [users, setUsers] = useState<UserCredentials[]>([]);
@@ -39,15 +39,14 @@ function ConfiguracionPageContent() {
 
   const handleSubmitUser = (userData: UserCredentials, originalId?: string) => {
     let updatedUsers;
+    let userToUpdateInAuthContext: UserCredentials | null = null;
+
     if (originalId) { // Editing existing user
-      updatedUsers = users.map(u => u.id === originalId ? { ...u, ...userData, id: originalId } : u);
-       // If the edited user is the currently logged-in user, update auth context
-       if (currentUser && currentUser.id === originalId) {
-        // Make sure to only update relevant fields, especially password if it changed.
-        const updatedAuthUser = updatedUsers.find(u => u.id === originalId);
-        if (updatedAuthUser) {
-            updateCurrentUser(updatedAuthUser);
-        }
+      updatedUsers = users.map(u => 
+        u.id === originalId ? { ...userData, id: originalId } : u // userData already contains the full new state
+      );
+      if (currentUser && currentUser.id === originalId) {
+        userToUpdateInAuthContext = updatedUsers.find(u => u.id === originalId) || null;
       }
     } else { // Creating new user
       const newUserWithId = { ...userData, id: getNextUserId() };
@@ -55,15 +54,23 @@ function ConfiguracionPageContent() {
     }
     setUsers(updatedUsers);
     saveStoredUsers(updatedUsers);
+    
+    if (userToUpdateInAuthContext) {
+        updateCurrentUser(userToUpdateInAuthContext);
+    }
+
     handleCloseModal();
   };
 
   const handleDeleteUser = (userId: string) => {
-    // Admin user deletion is already prevented in UserList, but double check
     const userToDelete = users.find(u => u.id === userId);
     if (userToDelete && userToDelete.username === 'admin') {
-        // This case should ideally not be reached if UI prevents it
+        // This should be prevented by UI logic in UserList, but as a safeguard.
         return; 
+    }
+    if (currentUser && currentUser.id === userId) {
+        // Prevent deleting self - UserList should also prevent this.
+        return;
     }
 
     const updatedUsers = users.filter(u => u.id !== userId);
@@ -80,9 +87,11 @@ function ConfiguracionPageContent() {
             <CardTitle className="flex items-center gap-2"><Users size={24} className="text-primary"/> Gestión de Usuarios</CardTitle>
             <CardDescription>Administra los usuarios del sistema.</CardDescription>
           </div>
-          <Button onClick={handleOpenModalForCreate} className="shadow">
-            <PlusCircle size={18} className="mr-2" /> Crear Nuevo Usuario
-          </Button>
+          {currentUser?.username === 'admin' && ( // Only admin can create new users
+            <Button onClick={handleOpenModalForCreate} className="shadow">
+                <PlusCircle size={18} className="mr-2" /> Crear Nuevo Usuario
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <UserList 
