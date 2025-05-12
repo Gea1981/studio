@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/auth-context';
+import { ThemeToggle } from '@/components/theme-toggle'; // Import the ThemeToggle component
 
 const getPageTitle = (pathname: string): string => {
   if (pathname.startsWith('/dashboard/resumen')) return 'Resumen General';
@@ -27,12 +28,8 @@ export default function AppHeader() {
         <SidebarTrigger className="md:hidden" /> {/* Only show on mobile, sidebar is fixed on desktop */}
         <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
       </div>
-      {/* Placeholder for potential header actions like notifications or user profile dropdown */}
-      {/* 
-      <Button variant="ghost" size="icon" onClick={logout} aria-label="Cerrar sesión">
-        <LogOut className="h-5 w-5" />
-      </Button>
-      */}
+      {/* Add the theme toggle button */}
+      <ThemeToggle />
     </header>
   );
 }
