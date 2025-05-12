@@ -1,4 +1,3 @@
-
 'use server';
 
 import { db, auth as firebaseAuthInstance } from './firebase'; // Corrected import path to relative
@@ -22,11 +21,12 @@ import bcrypt from 'bcryptjs'; // For password hashing
 
 // --- User Services ---
 const SALT_ROUNDS = 10;
+const FIREBASE_UNAVAILABLE_ERROR_MESSAGE = "Error de conexión con la base de datos: Firestore no está disponible. Por favor, revisa la configuración de Firebase (archivo .env.local y que el proyecto 'basemedica' esté activo) y tu conexión a internet.";
 
 export async function ensureAdminUserExists(): Promise<UserCredentials | null> {
   if (!db) {
     console.error("Firestore instance (db) is not available in ensureAdminUserExists. Firebase might not be configured or initialized correctly.");
-    throw new Error("Firestore not initialized. Check Firebase configuration in .env.local and src/lib/firebase.ts.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: ensureAdminUserExists)");
   }
   const usersCollectionRef = collection(db, 'users');
   const adminUsername = 'admin';
@@ -74,7 +74,7 @@ export async function ensureAdminUserExists(): Promise<UserCredentials | null> {
   } catch (e: any) {
     console.error("Error in ensureAdminUserExists:", e.message);
      if (e.code === 'unavailable' || e.message.toLowerCase().includes('offline') || e.message.toLowerCase().includes('network error')) {
-      throw new Error(`Firebase offline or not configured. Please check your internet connection and Firebase project setup. Original error: ${e.message}`);
+      throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + ` (Contexto: ensureAdminUserExists - Firebase offline/network). Original error: ${e.message}`);
     }
     throw new Error(`Failed to ensure admin user: ${e.message}`);
   }
@@ -84,7 +84,7 @@ export async function ensureAdminUserExists(): Promise<UserCredentials | null> {
 export const getUserByUsername = async (username: string): Promise<(UserCredentials & {passwordHash: string}) | null> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in getUserByUsername.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: getUserByUsername)");
   }
   const usersCollectionRef = collection(db, 'users');
   try {
@@ -116,7 +116,7 @@ export const getUserByUsername = async (username: string): Promise<(UserCredenti
   } catch (error: any) {
     console.error("Error fetching user by username:", error.message);
     if (error.code === 'unavailable' || error.message.toLowerCase().includes('offline')) {
-        throw new Error(`Firebase offline or network issue when fetching user by username. Check connection. Original: ${error.message}`);
+        throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + ` (Contexto: getUserByUsername - Firebase offline/network). Original: ${error.message}`);
     }
     throw error;
   }
@@ -125,7 +125,7 @@ export const getUserByUsername = async (username: string): Promise<(UserCredenti
 export const addUserToFirestore = async (userData: Omit<UserCredentials, 'id' | 'password_plaintext'> & {password_plaintext: string}): Promise<UserCredentials> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in addUserToFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: addUserToFirestore)");
   }
   const usersCollectionRef = collection(db, 'users');
   try {
@@ -152,7 +152,7 @@ export const addUserToFirestore = async (userData: Omit<UserCredentials, 'id' | 
 export const updateUserInFirestore = async (userId: string, userData: Partial<Omit<UserCredentials, 'id' | 'password_plaintext'> & {password_plaintext?: string}>): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in updateUserInFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: updateUserInFirestore)");
   }
   try {
     const userDocRef = doc(db, 'users', userId);
@@ -183,7 +183,7 @@ export const updateUserInFirestore = async (userId: string, userData: Partial<Om
 export const deleteUserFromFirestore = async (userId: string): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in deleteUserFromFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: deleteUserFromFirestore)");
   }
   try {
     const userDocRef = doc(db, 'users', userId);
@@ -201,8 +201,8 @@ export const deleteUserFromFirestore = async (userId: string): Promise<void> => 
 
 export const getAllUsersFromFirestore = async (): Promise<UserCredentials[]> => {
   if (!db) {
-    console.error("Firestore instance (db) is not available in getAllUsersFromFirestore. Returning empty array.");
-    return []; 
+    console.error("Firestore instance (db) is not available in getAllUsersFromFirestore.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: getAllUsersFromFirestore)");
   }
   const usersCollectionRef = collection(db, 'users');
   try {
@@ -221,8 +221,8 @@ export const getAllUsersFromFirestore = async (): Promise<UserCredentials[]> => 
 
 export const getAllPatientsFromFirestore = async (): Promise<Patient[]> => {
   if (!db) {
-    console.error("Firestore instance (db) is not available in getAllPatientsFromFirestore. Returning empty array.");
-    return [];
+    console.error("Firestore instance (db) is not available in getAllPatientsFromFirestore.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: getAllPatientsFromFirestore)");
   }
   const patientsCollectionRef = collection(db, 'patients');
   try {
@@ -238,7 +238,7 @@ export const getAllPatientsFromFirestore = async (): Promise<Patient[]> => {
 export const addPatientToFirestore = async (patientData: Omit<Patient, 'id'>): Promise<Patient> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in addPatientToFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: addPatientToFirestore)");
   }
   const patientsCollectionRef = collection(db, 'patients');
   try {
@@ -253,7 +253,7 @@ export const addPatientToFirestore = async (patientData: Omit<Patient, 'id'>): P
 export const updatePatientInFirestore = async (patientId: string, patientData: Partial<Omit<Patient, 'id'>>): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in updatePatientInFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: updatePatientInFirestore)");
   }
   try {
     const patientDocRef = doc(db, 'patients', patientId);
@@ -267,7 +267,7 @@ export const updatePatientInFirestore = async (patientId: string, patientData: P
 export const deletePatientFromFirestore = async (patientId: string): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in deletePatientFromFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: deletePatientFromFirestore)");
   }
   const medicalEntriesCollectionRef = collection(db, 'medicalEntries');
   const appointmentsCollectionRef = collection(db, 'appointments');
@@ -297,8 +297,8 @@ export const deletePatientFromFirestore = async (patientId: string): Promise<voi
 
 export const getAllMedicalEntriesFromFirestore = async (): Promise<MedicalEntry[]> => {
   if (!db) {
-    console.error("Firestore instance (db) is not available in getAllMedicalEntriesFromFirestore. Returning empty array.");
-    return [];
+    console.error("Firestore instance (db) is not available in getAllMedicalEntriesFromFirestore.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: getAllMedicalEntriesFromFirestore)");
   }
   const medicalEntriesCollectionRef = collection(db, 'medicalEntries');
   try {
@@ -340,7 +340,7 @@ export const getAllMedicalEntriesFromFirestore = async (): Promise<MedicalEntry[
 export const addMedicalEntryToFirestore = async (entryData: Omit<MedicalEntry, 'id'>): Promise<MedicalEntry> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in addMedicalEntryToFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: addMedicalEntryToFirestore)");
   }
   const medicalEntriesCollectionRef = collection(db, 'medicalEntries');
   try {
@@ -367,8 +367,8 @@ export const addMedicalEntryToFirestore = async (entryData: Omit<MedicalEntry, '
 
 export const getAllAppointmentsFromFirestore = async (): Promise<Appointment[]> => {
   if (!db) {
-    console.error("Firestore instance (db) is not available in getAllAppointmentsFromFirestore. Returning empty array.");
-    return [];
+    console.error("Firestore instance (db) is not available in getAllAppointmentsFromFirestore.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: getAllAppointmentsFromFirestore)");
   }
   const appointmentsCollectionRef = collection(db, 'appointments');
   try {
@@ -393,7 +393,7 @@ export const getAllAppointmentsFromFirestore = async (): Promise<Appointment[]> 
 export const addAppointmentToFirestore = async (appointmentData: Omit<Appointment, 'id'>): Promise<Appointment> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in addAppointmentToFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: addAppointmentToFirestore)");
   }
   const appointmentsCollectionRef = collection(db, 'appointments');
   try {
@@ -414,7 +414,7 @@ export const addAppointmentToFirestore = async (appointmentData: Omit<Appointmen
 export const updateAppointmentInFirestore = async (appointmentId: string, appointmentData: Partial<Omit<Appointment, 'id'>>): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in updateAppointmentInFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: updateAppointmentInFirestore)");
   }
   try {
     const appointmentDocRef = doc(db, 'appointments', appointmentId);
@@ -433,7 +433,7 @@ export const updateAppointmentInFirestore = async (appointmentId: string, appoin
 export const deleteAppointmentFromFirestore = async (appointmentId: string): Promise<void> => {
   if (!db) {
     console.error("Firestore instance (db) is not available in deleteAppointmentFromFirestore.");
-    throw new Error("Firestore not initialized. Check Firebase configuration.");
+    throw new Error(FIREBASE_UNAVAILABLE_ERROR_MESSAGE + " (Contexto: deleteAppointmentFromFirestore)");
   }
   try {
     const appointmentDocRef = doc(db, 'appointments', appointmentId);
@@ -463,3 +463,4 @@ export async function getNextIdFor(key: string, initialMax: number): Promise<str
   // console.warn(`getNextIdFor was called for key ${key}. This function is intended for client-side localStorage and may not behave as expected on the server.`);
   return String(Date.now() + Math.random()); // Placeholder for server environment
 };
+
